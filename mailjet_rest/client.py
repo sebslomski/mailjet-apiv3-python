@@ -10,11 +10,14 @@ from requests.compat import urljoin
 requests.packages.urllib3.disable_warnings()
 
 class Config(object):
-    API_URL = 'https://api.mailjet.com/v3/'
-    API_DOC = 'http://dev.mailjet.com/email-api/v3/'
+    API_URL = 'https://api.mailjet.com/'
+    API_DOC = 'http://dev.mailjet.com/email-api/'
+    VERSION = 'v3'
+    MAKE_API_CALL = True # ???
 
     def __getitem__(self, key):
         url = self.API_URL[0:]
+        version = self.VERSION
         headers = {'Content-type': 'application/json', 'User-agent': 'mailjet-apiv3-python'}
         if key.lower() == 'contactslist_csvdata':
             url = urljoin(url, 'DATA/')
@@ -30,8 +33,8 @@ class Config(object):
 
 class Endpoint(object):
 
-    def __init__(self, url, headers, auth, action=None):
-        self._url, self.headers, self._auth, self.action = url, headers, auth, action
+    def __init__(self, url, headers, auth, action=None, make_api_call=None):
+        self._url, self.headers, self._auth, self.action, self._make_api_call = url, headers, auth, action, make_api_call
 
     def __doc__(self):
         return self._doc
@@ -61,8 +64,20 @@ class Endpoint(object):
 
 class Client(object):
 
-    def __init__(self, auth=None, config=Config()):
+    def __init__(self, auth=None, config=Config(), options=None):
         self.auth, self.config = auth, config
+        if 'url' in options:
+            self.url = options['url']
+        else:
+            self.url = config['url']
+        if 'version' in options:
+            self.version = options['version']
+        else:
+            self.version = config['version']
+        if 'make_api_call' in options:
+            self.make_api_call = options['make_api_call']
+        else:
+            self.make_api_call = config['make_api_call']
 
     def __getattr__(self, name):
         split = name.split('_')
@@ -75,7 +90,8 @@ class Client(object):
             if action == 'csverror':
                 action = 'csverror/text:csv'
         url, headers = self.config[name]
-        return type(fname, (Endpoint,), {})(url=url, headers=headers, action=action, auth=self.auth)
+        url = self.url + '/' + self.version
+        return type(fname, (Endpoint,), {})(url=url, headers=headers, action=action, auth=self.auth, make_api_call = self.make_api_call)
 
 
 def api_call(auth, method, url, headers, data=None, filters=None, resource_id=None,
