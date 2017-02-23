@@ -33,34 +33,53 @@ class Config(object):
 
 class Endpoint(object):
 
-    def __init__(self, url, headers, auth, action=None, make_api_call=None):
-        self._url, self.headers, self._auth, self.action, self._make_api_call = url, headers, auth, action, make_api_call
+    def __init__(self, url, headers, auth, action=None, version=None, make_api_call=None):
+        self._url, self.headers, self._auth, self.action, self._version, self._make_api_call = url, headers, auth, action, version, make_api_call
 
     def __doc__(self):
         return self._doc
 
-    def _get(self, filters=None, action_id=None, id=None, **kwargs):
-        return api_call(self._auth, 'get', self._url, headers=self.headers, action=self.action, action_id=action_id, filters=filters, resource_id=id, **kwargs)
+    def _get(self, filters=None, action_id=None, id=None, options=None, **kwargs):
+        url, make_api_call = handle_options(options=options)
+        return api_call(self._auth, 'get', url, headers=self.headers, action=self.action, action_id=action_id, filters=filters, resource_id=id, make_api_call=make_api_call, **kwargs)
 
-    def get_many(self, filters=None, action_id=None, **kwargs):
-        return self._get(filters=filters, **kwargs)
+    def get_many(self, filters=None, action_id=None, options=None, **kwargs):
+        return self._get(filters=filters, options=options, **kwargs)
 
-    def get(self, id=None, filters=None, action_id=None, **kwargs):
-        return self._get(id=id, filters=filters, **kwargs)
+    def get(self, id=None, filters=None, action_id=None, options=None, **kwargs):
+        return self._get(id=id, filters=filters, options=options, **kwargs)
 
-    def create(self, data=None, filters=None, id=None, action_id=None, **kwargs):
+    def create(self, data=None, filters=None, id=None, action_id=None, options=None, make_api_call=make_api_call, **kwargs):
+        url, make_api_call = handle_options(options=options)
         if self.headers['Content-type'] == 'application/json':
             data = json.dumps(data)
-        return api_call(self._auth, 'post', self._url, headers=self.headers, resource_id=id, data=data, action=self.action, action_id=action_id, filters=filters, **kwargs)
+        return api_call(self._auth, 'post', self._url, headers=self.headers, resource_id=id, data=data, action=self.action, action_id=action_id, filters=filters, make_api_call=make_api_call, **kwargs)
 
-    def update(self, id, data, filters=None, action_id=None, **kwargs):
+    def update(self, id, data, filters=None, action_id=None, options=None, **kwargs):
+        url, make_api_call = handle_options(options=options)
         if self.headers['Content-type'] == 'application/json':
             data = json.dumps(data)
-        return api_call(self._auth, 'put', self._url, resource_id=id, headers=self.headers, data=data, action=self.action, action_id=action_id, filters=filters, **kwargs)
+        return api_call(self._auth, 'put', url, resource_id=id, headers=self.headers, data=data, action=self.action, action_id=action_id, filters=filters, make_api_call=make_api_call, **kwargs)
 
-    def delete(self, id, **kwargs):
-        return api_call(self._auth, 'delete', self._url, action=self.action, headers=self.headers, resource_id=id, **kwargs)
-
+    def delete(self, id, options=None, **kwargs):
+        url, make_api_call = handle_options(options=options)
+        return api_call(self._auth, 'delete', self._url, action=self.action, headers=self.headers, resource_id=id, make_api_call=make_api_call, **kwargs)
+    
+    def handle_options(self, options=None):
+        if 'url' in options:
+            url = options['url']
+        else:
+            url = self._url
+        if 'version' in options:
+            url = url + '/' + options['version']
+        else:
+            url = url + '/' + self._version
+        if 'make_api_call' in options:
+            make_api_call = options['make_api_call']
+        else:
+            make_api_call = self._make_api_call
+        
+        return url, make_api_call
 
 class Client(object):
 
@@ -90,8 +109,7 @@ class Client(object):
             if action == 'csverror':
                 action = 'csverror/text:csv'
         url, headers = self.config[name]
-        url = self.url + '/' + self.version
-        return type(fname, (Endpoint,), {})(url=url, headers=headers, action=action, auth=self.auth, make_api_call = self.make_api_call)
+        return type(fname, (Endpoint,), {})(url=self.url, headers=headers, action=action, auth=self.auth, version=self.version, make_api_call=self.make_api_call)
 
 
 def api_call(auth, method, url, headers, data=None, filters=None, resource_id=None,
