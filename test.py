@@ -1,8 +1,7 @@
 import unittest
-
 from requests.auth import HTTPBasicAuth
-
 from mailjet_rest import Client
+from mailjet_rest.client import get_auth, AuthorizationError
 from mailjet_rest.utils.auth import HTTPBearerAuth
 import os
 import random
@@ -141,16 +140,17 @@ class TestSuite(unittest.TestCase):
         self.assertEqual(self.client.config.user_agent, 'mailjet-apiv3-python/v1.4.0')
 
     def test_get_auth_bearer(self):
-        client = Client(
-            auth='bearer_token',
-        )
-        self.assertIsInstance(client.auth, HTTPBearerAuth)
+        auth = get_auth('bearer_token')
+        self.assertIsInstance(auth, HTTPBearerAuth)
 
     def test_get_auth_basic(self):
-        client = Client(
-            auth=('api_key', 'api_secret'),
-        )
-        self.assertIsInstance(client.auth, HTTPBasicAuth)
+        auth = get_auth(('api_key', 'api_secret'))
+        self.assertIsInstance(auth, HTTPBasicAuth)
+
+    def test_get_auth_unrecognised(self):
+        with self.assertRaises(AuthorizationError):
+            get_auth(['api_key', 'api_secret'])
+
 
 if __name__ == '__main__':
     unittest.main()
