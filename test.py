@@ -1,5 +1,9 @@
 import unittest
+
+from requests.auth import HTTPBasicAuth
+
 from mailjet_rest import Client
+from mailjet_rest.utils.auth import HTTPBearerAuth
 import os
 import random
 import string
@@ -136,6 +140,17 @@ class TestSuite(unittest.TestCase):
         )
         self.assertEqual(self.client.config.user_agent, 'mailjet-apiv3-python/v1.4.0')
 
+    def test_get_auth_bearer(self):
+        client = Client(
+            auth='bearer_token',
+        )
+        self.assertIsInstance(client.auth, HTTPBearerAuth)
+
+    def test_get_auth_basic(self):
+        client = Client(
+            auth=('api_key', 'api_secret'),
+        )
+        self.assertIsInstance(client.auth, HTTPBasicAuth)
 
 if __name__ == '__main__':
     unittest.main()
