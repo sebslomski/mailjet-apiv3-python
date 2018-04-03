@@ -74,7 +74,18 @@ class TestSuite(unittest.TestCase):
         result = self.client.sender.create(data={}).json()
         self.assertTrue('StatusCode' in result and result['StatusCode'] is not 400)
 
-    def test_client_custom_version(self):
+    def test_client_v31(self):
+        self.client = Client(
+            auth=self.auth,
+            version='v3.1'
+        )
+        self.assertEqual(self.client.config.version, 'v3.1')
+        self.assertEqual(
+            self.client.config['contact'][0],
+            'https://api.mailjet.com/v3.1/REST/contact'
+        )
+
+    def test_client_v31_send(self):
         self.client = Client(
             auth=self.auth,
             version='v3.1'
@@ -85,12 +96,45 @@ class TestSuite(unittest.TestCase):
             'https://api.mailjet.com/v3.1/send'
         )
 
+    def test_client_v3(self):
+        self.client = Client(
+            auth=self.auth,
+            version='v3'
+        )
+        self.assertEqual(self.client.config.version, 'v3')
+        self.assertEqual(
+            self.client.config['contact'][0],
+            'https://api.mailjet.com/v3/REST/contact'
+        )
+
+    def test_client_v3_send(self):
+        self.client = Client(
+            auth=self.auth,
+            version='v3'
+        )
+        self.assertEqual(self.client.config.version, 'v3')
+        self.assertEqual(
+            self.client.config['send'][0],
+            'https://api.mailjet.com/v3/send'
+        )
+
+    def test_client_v4(self):
+        self.client = Client(
+            auth=self.auth,
+            version='v4'
+        )
+        self.assertEqual(self.client.config.version, 'v4')
+        self.assertEqual(
+            self.client.config['sms'][0],
+            'https://api.mailjet.com/v4/sms'
+        )
+
     def test_user_agent(self):
         self.client = Client(
             auth=self.auth,
             version='v3.1'
         )
-        self.assertEqual(self.client.config.user_agent, 'mailjet-apiv3-python/v1.3.0')
+        self.assertEqual(self.client.config.user_agent, 'mailjet-apiv3-python/v1.4.0')
 
 
 if __name__ == '__main__':
